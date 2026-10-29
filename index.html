@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Una línea del tiempo interactiva de la historia humana.">
+  <title>Historia Universal — Línea del tiempo</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./script.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div>
+      <p class="eyebrow">PROYECTO PERSONAL</p>
+      <h1>Historia Universal</h1>
+      <p class="subtitle">Una línea del tiempo para explorar el pasado humano.</p>
+    </div>
+    <a class="repo-link" href="https://github.com/" target="_blank" rel="noreferrer">GitHub ↗</a>
+  </header>
+
+  <main>
+    <section class="panel controls-panel" aria-labelledby="explore-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">EXPLORACIÓN</p>
+          <h2 id="explore-title">Explora el tiempo</h2>
+        </div>
+        <p id="load-status" class="status" role="status">Cargando acontecimientos…</p>
+      </div>
+
+      <div class="control-grid">
+        <label class="field search-field">
+          <span>Buscar</span>
+          <input id="search" type="search" placeholder="Título, descripción o región">
+        </label>
+        <label class="field">
+          <span>Categoría</span>
+          <select id="category-filter">
+            <option value="">Todas las categorías</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Región</span>
+          <select id="region-filter">
+            <option value="">Todas las regiones</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="range-controls">
+        <label class="field">
+          <span>Desde (año)</span>
+          <input id="range-start" type="number" value="-10000" step="1">
+        </label>
+        <label class="field">
+          <span>Hasta (año)</span>
+          <input id="range-end" type="number" value="2026" step="1">
+        </label>
+        <button id="apply-range" class="button button-primary">Ir al intervalo</button>
+      </div>
+
+      <div class="zoom-controls" aria-label="Controles de navegación temporal">
+        <button id="zoom-out" class="button" type="button" title="Alejar la vista">− Alejar</button>
+        <button id="zoom-in" class="button" type="button" title="Acercar la vista">＋ Acercar</button>
+        <button id="pan-left" class="button" type="button" title="Moverse hacia el pasado">← Pasado</button>
+        <button id="pan-right" class="button" type="button" title="Moverse hacia el futuro">Futuro →</button>
+        <button id="reset-view" class="button button-quiet" type="button">Vista completa</button>
+      </div>
+    </section>
+
+    <section class="panel timeline-panel" aria-labelledby="timeline-title">
+      <div class="section-heading timeline-heading">
+        <div>
+          <p class="eyebrow">CRONOLOGÍA</p>
+          <h2 id="timeline-title">Línea del tiempo</h2>
+        </div>
+        <p id="visible-range" class="range-label">—</p>
+      </div>
+      <p class="interaction-hint">Arrastra la línea horizontalmente para desplazarte. Usa los botones para acercarte o alejarte.</p>
+      <div id="timeline-viewport" class="timeline-viewport" tabindex="0" aria-label="Línea del tiempo desplazable">
+        <div id="timeline-track" class="timeline-track">
+          <div class="axis-line"></div>
+          <div id="ticks" class="ticks"></div>
+          <div id="markers" class="markers"></div>
+        </div>
+      </div>
+      <div class="timeline-footer">
+        <p id="event-count">0 acontecimientos</p>
+        <p>Las fechas anteriores a nuestra era se escriben con signo negativo.</p>
+      </div>
+    </section>
+
+    <section class="panel details-panel" aria-labelledby="details-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">FICHA</p>
+          <h2 id="details-title">Detalles del acontecimiento</h2>
+        </div>
+      </div>
+      <div id="event-details" class="event-details">
+        <p class="empty-state">Selecciona un marcador de la línea del tiempo para consultar su información.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Historia Universal · Proyecto estático publicado con GitHub Pages.</p>
+    <p>Las fechas y descripciones de ejemplo deben verificarse antes de usarse como referencia académica.</p>
+  </footer>
+</body>
+</html>
