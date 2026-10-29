@@ -194,7 +194,7 @@ function renderTicks() {
 
     const label = document.createElement("span");
     label.className = "tick-label";
-    label.textContent = formatYear(year);
+    label.textContent = axisYear === 0 ? "0" : formatYear(year);
     tick.appendChild(label);
     elements.ticks.appendChild(tick);
   }
