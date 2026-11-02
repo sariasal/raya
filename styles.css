@@ -111,6 +111,8 @@ input:focus, select:focus, button:focus-visible, .timeline-viewport:focus-visibl
 .timeline-track { position: relative; min-width: 100%; height: 390px; }
 .axis-line { position: absolute; top: 190px; left: 0; right: 0; height: 4px; background: var(--line); }
 .ticks, .markers { position: absolute; inset: 0; }
+.event-connectors { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 1; }
+.event-connector { stroke: #14342B; stroke-width: 1.25; vector-effect: non-scaling-stroke; }
 .tick { position: absolute; top: 190px; height: 24px; border-left: 1px solid #710000; }
 .tick-label {
   position: absolute;
@@ -124,8 +126,8 @@ input:focus, select:focus, button:focus-visible, .timeline-viewport:focus-visibl
   line-height: 1.25;
   white-space: nowrap;
 }
-.tick:first-child .tick-label { transform: none; }
-.tick:last-child .tick-label { transform: translateX(-100%); }
+.tick-label.at-start { transform: none; }
+.tick-label.at-end { transform: translateX(-100%); }
 .event-marker {
   position: absolute;
   z-index: 2;
@@ -144,15 +146,6 @@ input:focus, select:focus, button:focus-visible, .timeline-viewport:focus-visibl
   cursor: pointer;
   transform: translateX(-50%);
 }
-.event-marker::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: -15px;
-  height: 14px;
-  border-left: 1px solid #14342B;
-}
-.event-marker.below::after { top: -15px; bottom: auto; }
 .event-marker:hover, .event-marker:focus-visible, .event-marker.selected {
   color: #C5D86D;
   background: #710000;

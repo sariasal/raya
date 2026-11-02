@@ -184,20 +184,33 @@ function renderTicks() {
   const span = endAxis - startAxis;
   const step = chooseTickStep(span);
   const firstTick = Math.ceil(startAxis / step) * step;
+  const width = Math.max(elements.viewport.clientWidth, 320);
+  const ticks = [];
 
-  for (let axisYear = firstTick; axisYear <= endAxis && elements.ticks.childElementCount < 30; axisYear += step) {
-    const year = axisToHistorical(axisYear);
-    const position = ((axisYear - startAxis) / span) * 100;
+  for (let axisYear = firstTick; axisYear <= endAxis && ticks.length < 30; axisYear += step) {
+    ticks.push({ axisYear, position: ((axisYear - startAxis) / span) * width });
+  }
+
+  // Mantiene una separación mínima entre etiquetas para que no se encimen al acercar.
+  const minGap = Math.max(76, Math.min(120, width / 8));
+  let lastLabelX = -Infinity;
+  ticks.forEach(({ axisYear, position }, index) => {
+    const isLast = index === ticks.length - 1;
+    if (position - lastLabelX < minGap && !isLast) return;
     const tick = document.createElement("div");
     tick.className = "tick";
-    tick.style.left = `${position}%`;
+    tick.style.left = `${(position / width) * 100}%`;
 
     const label = document.createElement("span");
     label.className = "tick-label";
-    label.textContent = axisYear === 0 ? "0" : formatYear(year);
+    label.textContent = axisYear === 0 ? "0" : formatYear(axisToHistorical(axisYear));
+    // Alinea las etiquetas de los extremos hacia el interior del área visible.
+    if (position < 55) label.classList.add("at-start");
+    else if (width - position < 55) label.classList.add("at-end");
     tick.appendChild(label);
     elements.ticks.appendChild(tick);
-  }
+    lastLabelX = position;
+  });
 }
 
 function renderMarkers(filtered) {
@@ -207,48 +220,83 @@ function renderMarkers(filtered) {
   const endAxis = historicalToAxis(viewEnd);
   const span = endAxis - startAxis;
   const viewportWidth = Math.max(elements.viewport.clientWidth, 320);
+  const axisY = viewportWidth <= 760 ? 180 : 190;
   const sorted = filtered
     .map(event => {
-      const middle = (historicalToAxis(event.start) + historicalToAxis(event.end)) / 2;
-      return { event, middle, x: ((middle - startAxis) / span) * viewportWidth };
+      const start = historicalToAxis(event.start);
+      const end = historicalToAxis(event.end);
+      const middle = (start + end) / 2;
+      return {
+        event, start, end, middle,
+        x: ((middle - startAxis) / span) * viewportWidth,
+        startX: ((start - startAxis) / span) * viewportWidth,
+        endX: ((end - startAxis) / span) * viewportWidth
+      };
     })
     .filter(item => item.middle >= startAxis && item.middle <= endAxis)
     .sort((a, b) => a.x - b.x);
 
-  // Reparte las etiquetas entre carriles alternos para reducir solapamientos.
-  const laneEnds = [[], [], [], [], [], []];
+  const laneEnds = [];
+  const placed = [];
   let maxLane = 0;
 
-  sorted.forEach(({ event, x }) => {
+  sorted.forEach(item => {
+    const { event, x } = item;
     const estimatedWidth = Math.min(175, Math.max(76, event.title.length * 7 + 24));
     let chosenLane = laneEnds.findIndex(endX => x - estimatedWidth / 2 > endX + 8);
-    if (chosenLane === -1) {
-      chosenLane = laneEnds.length;
-      laneEnds.push([]);
-    }
+    if (chosenLane === -1) chosenLane = laneEnds.length;
     laneEnds[chosenLane] = x + estimatedWidth / 2;
     maxLane = Math.max(maxLane, chosenLane);
-
-    const marker = document.createElement("button");
-    marker.type = "button";
-    marker.className = "event-marker";
-    if (event.id === selectedId) marker.classList.add("selected");
     const above = chosenLane % 2 === 0;
-    if (!above) marker.classList.add("below");
-    marker.style.left = `${(x / viewportWidth) * 100}%`;
-    marker.style.top = above
-      ? `${Math.max(8, 190 - (Math.floor(chosenLane / 2) + 1) * 48)}px`
-      : `${214 + Math.floor(chosenLane / 2) * 48}px`;
-    marker.textContent = event.title;
-    marker.title = `${event.title} · ${formatYear(event.start)}`;
-    marker.setAttribute("aria-label", `${event.title}, ${formatYear(event.start)}. Mostrar detalles.`);
-    marker.addEventListener("click", () => showDetails(event));
-    elements.markers.appendChild(marker);
+    const top = above
+      ? Math.max(8, axisY - (Math.floor(chosenLane / 2) + 1) * 48)
+      : axisY + 24 + Math.floor(chosenLane / 2) * 48;
+    placed.push({ ...item, chosenLane, above, top });
   });
 
   const neededHeight = Math.max(390, 255 + (Math.floor(maxLane / 2) + 1) * 48);
   elements.track.style.height = `${neededHeight}px`;
   elements.viewport.style.minHeight = `${neededHeight}px`;
+
+  // SVG de conectores: cada etiqueta se une de forma independiente al inicio y al fin.
+  const svgNS = "http://www.w3.org/2000/svg";
+  const connectors = document.createElementNS(svgNS, "svg");
+  connectors.setAttribute("class", "event-connectors");
+  connectors.setAttribute("viewBox", `0 0 ${viewportWidth} ${neededHeight}`);
+  connectors.setAttribute("preserveAspectRatio", "none");
+  connectors.setAttribute("aria-hidden", "true");
+
+  placed.forEach(item => {
+    const { event, x, startX, endX, above, top } = item;
+    const markerHeight = 34;
+    const anchorY = above ? top + markerHeight : top;
+    const makeLine = (dateX, offset) => {
+      const line = document.createElementNS(svgNS, "line");
+      line.setAttribute("x1", String(x + offset));
+      line.setAttribute("y1", String(anchorY));
+      line.setAttribute("x2", String(dateX));
+      line.setAttribute("y2", String(axisY));
+      line.setAttribute("class", "event-connector");
+      connectors.appendChild(line);
+    };
+    makeLine(startX, -2);
+    makeLine(endX, 2);
+
+    const marker = document.createElement("button");
+    marker.type = "button";
+    marker.className = "event-marker";
+    if (event.id === selectedId) marker.classList.add("selected");
+    if (!above) marker.classList.add("below");
+    marker.style.left = `${(x / viewportWidth) * 100}%`;
+    marker.style.top = `${top}px`;
+    marker.textContent = event.title;
+    marker.title = `${event.title} · ${formatYear(event.start)}${event.end !== event.start ? ` – ${formatYear(event.end)}` : ""}`;
+    marker.setAttribute("aria-label", `${event.title}, desde ${formatYear(event.start)} hasta ${formatYear(event.end)}. Mostrar detalles.`);
+    marker.addEventListener("click", () => showDetails(event));
+    elements.markers.appendChild(marker);
+  });
+
+  elements.markers.prepend(connectors);
 }
 
 function render() {
